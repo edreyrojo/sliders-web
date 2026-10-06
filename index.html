@@ -206,6 +206,98 @@ body {
                     console.error("Error getting user doc web:", error);
                 });
             };
+
+            // Puente para invocar el teclado nativo en móviles desde ui.gd
+            window.requestMobileKeyboard = function(callbackName) {
+                let existingOverlay = document.getElementById('mobile-keyboard-overlay');
+                if (existingOverlay) {
+                    existingOverlay.remove();
+                }
+
+                const overlay = document.createElement('div');
+                overlay.id = 'mobile-keyboard-overlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+                overlay.style.display = 'flex';
+                overlay.style.flexDirection = 'column';
+                overlay.style.justifyContent = 'center';
+                overlay.style.alignItems = 'center';
+                overlay.style.zIndex = '99999';
+
+                const box = document.createElement('div');
+                box.style.backgroundColor = '#0b1626';
+                box.style.padding = '24px';
+                box.style.borderRadius = '14px';
+                box.style.border = '2px solid #1a525c';
+                box.style.display = 'flex';
+                box.style.flexDirection = 'column';
+                box.style.alignItems = 'center';
+                box.style.gap = '16px';
+                box.style.width = '85%';
+                box.style.maxWidth = '380px';
+                box.style.boxSizing = 'border-box';
+
+                const title = document.createElement('h3');
+                title.innerText = 'Escribe tu nombre';
+                title.style.color = 'white';
+                title.style.fontFamily = 'sans-serif';
+                title.style.margin = '0';
+                title.style.fontSize = '22px';
+                box.appendChild(title);
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = 12;
+                input.placeholder = 'Tu nombre';
+                input.style.width = '100%';
+                input.style.padding = '14px';
+                input.style.fontSize = '22px';
+                input.style.textAlign = 'center';
+                input.style.borderRadius = '8px';
+                input.style.border = '1px solid #257585';
+                input.style.backgroundColor = '#122338';
+                input.style.color = 'white';
+                input.style.boxSizing = 'border-box';
+                box.appendChild(input);
+
+                const btn = document.createElement('button');
+                btn.innerText = 'GUARDAR';
+                btn.style.width = '100%';
+                btn.style.padding = '14px';
+                btn.style.fontSize = '18px';
+                btn.style.backgroundColor = '#1a525c';
+                btn.style.color = 'white';
+                btn.style.border = 'none';
+                btn.style.borderRadius = '8px';
+                btn.style.cursor = 'pointer';
+                box.appendChild(btn);
+
+                overlay.appendChild(box);
+                document.body.appendChild(overlay);
+
+                setTimeout(() => {
+                    input.focus();
+                }, 100);
+
+                function submitName() {
+                    const val = input.value.trim();
+                    overlay.remove();
+                    if (window[callbackName]) {
+                        window[callbackName](val);
+                    }
+                }
+
+                btn.onclick = submitName;
+                input.onkeydown = function(e) {
+                    if (e.key === 'Enter') {
+                        submitName();
+                    }
+                };
+            };
         </script>
     </head>
     <body>
