@@ -290,7 +290,7 @@
                     // Ranking: lee y deduplica por uid (o por nombre si es invitado).
                     window.fetchFirestoreTopWeb = function (limit, callbackName) {
                         const take = Math.max(1, Math.min(50, limit));
-                        fb.firestore().collection("records_mundiales")
+                        fb.firestore().collection("records_mundiales_s2")
                             .orderBy("score", "desc")
                             .limit(Math.min(take * 5, 100))
                             .get()
@@ -314,13 +314,15 @@
                             })
                             .catch((error) => {
                                 console.error("Error Firestore Web:", error);
-                                if (window[callbackName]) window[callbackName]("[]", false, 500);
+                                // permission-denied = la coleccion nueva aun no esta en las reglas.
+                                const code = (error && error.code === "permission-denied") ? 403 : 500;
+                                if (window[callbackName]) window[callbackName]("[]", false, code);
                             });
                     };
 
                     // Partida sin sesion: entrada anonima (el ranking la deduplica por nombre).
                     window.submitScoreWeb = function (name, score, level, skin) {
-                        fb.firestore().collection("records_mundiales").add({
+                        fb.firestore().collection("records_mundiales_s2").add({
                             name: String(name || "ANÓNIMO").slice(0, 16),
                             score: parseInt(score, 10) || 0,
                             level: parseInt(level, 10) || 1,
@@ -336,7 +338,7 @@
                             window.submitScoreWeb(name, score, level, skin);
                             return;
                         }
-                        const docRef = fb.firestore().collection("records_mundiales").doc(user.uid);
+                        const docRef = fb.firestore().collection("records_mundiales_s2").doc(user.uid);
                         docRef.get().then((doc) => {
                             const prev = doc.exists ? (parseInt(doc.data().score || 0, 10) || 0) : -1;
                             if (score > prev) {
@@ -473,7 +475,7 @@
 
     <script src="index.js"></script>
     <script>
-        const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1887764,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+        const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1888836,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
         const GODOT_THREADS_ENABLED = false;
         const engine = new Engine(GODOT_CONFIG);
 
