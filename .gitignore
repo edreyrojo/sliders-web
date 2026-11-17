@@ -1,0 +1,4 @@
+# Artefactos del export (el build los regenera)
+*.import
+index.png
+.DS_Store

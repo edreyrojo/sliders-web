@@ -1,10 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
     <title>Sliders</title>
+    <meta name="theme-color" content="#050b12">
+    <meta name="description" content="Sliders — devora el mapa, abre portales y pasa de nivel. Un arcade de territorio para móvil.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Sliders">
+    <meta property="og:description" content="Devora el mapa, abre portales y pasa de nivel.">
+    <meta property="og:image" content="index.icon.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    <link rel="preconnect" href="https://sliders-a67c5.firebaseapp.com">
+    <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+    <link rel="apple-touch-icon" href="index.apple-touch-icon.png" />
     <style>
         html,
         body,
@@ -14,15 +26,26 @@
             border: 0;
         }
 
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+        }
+
         body {
             color: white;
-            background-color: black;
+            background-color: #050b12;
             overflow: hidden;
+            touch-action: none;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
         }
 
         #canvas {
             display: block;
-            touch-action: none;
         }
 
         #canvas:focus {
@@ -44,18 +67,24 @@
         }
 
         #status {
-            background-color: #242424;
+            background: #050d1a;
+            background-image: radial-gradient(circle at 50% 32%, rgba(35, 120, 110, .35), rgba(5, 11, 18, 1) 62%);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            gap: 14px;
             visibility: hidden;
+            z-index: 5;
         }
 
         #status-splash {
-            max-height: 100%;
-            max-width: 100%;
-            margin: auto;
+            position: static;
+            max-height: 164px;
+            max-width: 164px;
+            margin: 0 auto;
+            border-radius: 28px;
+            box-shadow: 0 12px 60px rgba(60, 255, 170, .18);
         }
 
         #status-splash.show-image--false {
@@ -63,8 +92,8 @@
         }
 
         #status-splash.fullsize--true {
-            height: 100%;
-            width: 100%;
+            height: auto;
+            width: auto;
             object-fit: contain;
         }
 
@@ -72,241 +101,356 @@
             image-rendering: pixelated;
         }
 
+        #brand {
+            font-size: clamp(34px, 9vw, 54px);
+            font-weight: 800;
+            letter-spacing: .14em;
+            color: #7dffb0;
+            text-shadow: 0 0 28px rgba(80, 255, 160, .35);
+            margin-top: 4px;
+        }
+
+        #brand-sub {
+            font-size: 13px;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+            color: rgba(190, 215, 225, .65);
+            margin-top: 2px;
+        }
+
+        #status-progress {
+            position: static;
+            bottom: auto;
+            width: min(62vw, 320px);
+            height: 8px;
+            margin-top: 18px;
+            border: 0;
+            border-radius: 99px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, .08);
+            color: #6fffc0;
+            accent-color: #6fffc0;
+        }
+
+        #status-progress::-webkit-progress-bar {
+            background: rgba(255, 255, 255, .08);
+            border-radius: 99px;
+        }
+
+        #status-progress::-webkit-progress-value {
+            background: linear-gradient(90deg, #2fd0a0, #9dff78);
+            border-radius: 99px;
+        }
+
+        #loading-tip {
+            max-width: 76vw;
+            text-align: center;
+            font-size: 13px;
+            line-height: 1.45;
+            color: rgba(200, 220, 230, .62);
+            margin-top: 2px;
+        }
+
         #status-progress,
         #status-notice {
             display: none;
         }
 
-        #status-progress {
-            bottom: 10%;
-            width: 50%;
-            margin: 0 auto;
-        }
-
         #status-notice {
             background-color: #5b3943;
-            border-radius: 0.5rem;
+            border-radius: .5rem;
             border: 1px solid #9b3943;
             color: #e0e0e0;
-            font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
             line-height: 1.3;
             margin: 0 2rem;
             overflow: hidden;
             padding: 1rem;
             text-align: center;
             z-index: 1;
+            font-size: 14px;
+        }
+
+        #mobile-keyboard-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .86);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            box-sizing: border-box;
+        }
+
+        #mobile-keyboard-overlay .kb-box {
+            background: #0b1626;
+            border: 2px solid #1a525c;
+            border-radius: 16px;
+            padding: 22px;
+            width: min(88vw, 380px);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
+        }
+
+        #mobile-keyboard-overlay h3 {
+            margin: 0;
+            font-size: 22px;
+            text-align: center;
+        }
+
+        #mobile-keyboard-overlay input {
+            width: 100%;
+            padding: 14px;
+            font-size: 20px;
+            text-align: center;
+            color: white;
+            background: #122338;
+            border: 1px solid #257585;
+            border-radius: 10px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        #mobile-keyboard-overlay .kb-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        #mobile-keyboard-overlay button {
+            flex: 1;
+            padding: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            border: 0;
+            border-radius: 10px;
+            color: white;
+            background: #1a525c;
+        }
+
+        #mobile-keyboard-overlay button.ghost {
+            background: #1a2633;
+            color: #a8bbc6;
+        }
+
+        #mobile-keyboard-overlay button:active {
+            filter: brightness(1.25);
         }
     </style>
     <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
-    <link rel="apple-touch-icon" href="index.apple-touch-icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
 
-    <!-- SDKs de Firebase Compat -->
+
+    <!-- Firebase (auth + ranking). Si falla la carga, el juego sigue en local. -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyC4MjGshf1ESaLkCOP0uWafJRRYkYymRqc",
-            authDomain: "sliders-a67c5.firebaseapp.com",
-            projectId: "sliders-a67c5",
-            storageBucket: "sliders-a67c5.firebasestorage.app",
-            messagingSenderId: "766830266792",
-            appId: "1:766830266792:web:32b76c96f6ad6fe0feb59d"
-        };
-
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-
-        // Variables globales para auth.gd
-        window._currentUser = null;
-        window._lastAuthError = "";
-
-        firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                user.getIdToken().then((idToken) => {
-                    window._currentUser = {
-                        uid: user.uid,
-                        name: user.displayName || "Usuario",
-                        token: idToken
-                    };
-                });
-            } else {
-                window._currentUser = null;
-            }
-        });
-
-        window.authLoginGoogle = function () {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            firebase.auth().signInWithPopup(provider).catch((error) => {
-                window._lastAuthError = error.message;
-            });
-        };
-
-        window.authLogout = function () {
-            firebase.auth().signOut().catch((error) => {
-                window._lastAuthError = error.message;
-            });
-        };
-
-        // Puente para obtener récords en la versión web
-        window.fetchFirestoreTopWeb = function (limit, callbackName) {
-            firebase.firestore().collection("records_mundiales")
-                .orderBy("score", "desc")
-                .limit(limit)
-                .get()
-                .then((querySnapshot) => {
-                    let docs = [];
-                    querySnapshot.forEach((doc) => {
-                        let d = doc.data();
-                        docs.push({
-                            name: d.name || "???",
-                            score: parseInt(d.score || 0),
-                            level: parseInt(d.level || 1)
-                        });
-                    });
-                    if (window[callbackName]) {
-                        window[callbackName](JSON.stringify(docs), true, 200);
-                    }
-                })
-                .catch((error) => {
-                    console.error("Error Firestore Web:", error);
-                    if (window[callbackName]) {
-                        window[callbackName]("[]", false, 500);
-                    }
-                });
-        };
-
-        // Puentes para subir puntajes en la versión web
-        window.submitScoreWeb = function (name, score, level, skin) {
-            firebase.firestore().collection("records_mundiales").add({
-                name: name,
-                score: score,
-                level: level,
-                skin: skin,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).catch((error) => {
-                console.error("Error submitting score web:", error);
-            });
-        };
-
-        window.submitScoreUserWeb = function (uid, name, score, level, skin) {
-            const docRef = firebase.firestore().collection("records_mundiales").doc(uid);
-            docRef.get().then((doc) => {
-                let prevScore = -1;
-                if (doc.exists) {
-                    prevScore = doc.data().score || -1;
-                }
-                if (score > prevScore) {
-                    docRef.set({
-                        uid: uid,
-                        name: name,
-                        score: score,
-                        level: level,
-                        skin: skin,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    }, { merge: true }).catch((error) => {
-                        console.error("Error writing user doc web:", error);
-                    });
-                }
-            }).catch((error) => {
-                console.error("Error getting user doc web:", error);
-            });
-        };
-
-        // Puente para invocar el teclado nativo en móviles desde ui.gd
-        window.requestMobileKeyboard = function (callbackName) {
-            let existingOverlay = document.getElementById('mobile-keyboard-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
-            }
-
-            const overlay = document.createElement('div');
-            overlay.id = 'mobile-keyboard-overlay';
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100%';
-            overlay.style.height = '100%';
-            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
-            overlay.style.display = 'flex';
-            overlay.style.flexDirection = 'column';
-            overlay.style.justifyContent = 'center';
-            overlay.style.alignItems = 'center';
-            overlay.style.zIndex = '99999';
-            overlay.style.pointerEvents = 'auto';
-            overlay.style.touchAction = 'auto';
-
-            const box = document.createElement('div');
-            box.style.backgroundColor = '#0b1626';
-            box.style.padding = '24px';
-            box.style.borderRadius = '14px';
-            box.style.border = '2px solid #1a525c';
-            box.style.display = 'flex';
-            box.style.flexDirection = 'column';
-            box.style.alignItems = 'center';
-            box.style.gap = '16px';
-            box.style.width = '85%';
-            box.style.maxWidth = '380px';
-            box.style.boxSizing = 'border-box';
-
-            const title = document.createElement('h3');
-            title.innerText = 'Escribe tu nombre';
-            title.style.color = 'white';
-            title.style.fontFamily = 'sans-serif';
-            title.style.margin = '0';
-            title.style.fontSize = '22px';
-            box.appendChild(title);
-
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.maxLength = 12;
-            input.placeholder = 'Tu nombre';
-            input.style.width = '100%';
-            input.style.padding = '14px';
-            input.style.fontSize = '22px';
-            input.style.textAlign = 'center';
-            input.style.borderRadius = '8px';
-            input.style.border = '1px solid #257585';
-            input.style.backgroundColor = '#122338';
-            input.style.color = 'white';
-            input.style.boxSizing = 'border-box';
-            box.appendChild(input);
-
-            const btn = document.createElement('button');
-            btn.innerText = 'GUARDAR';
-            btn.style.width = '100%';
-            btn.style.padding = '14px';
-            btn.style.fontSize = '18px';
-            btn.style.backgroundColor = '#1a525c';
-            btn.style.color = 'white';
-            btn.style.border = 'none';
-            btn.style.borderRadius = '8px';
-            btn.style.cursor = 'pointer';
-            box.appendChild(btn);
-
-            overlay.appendChild(box);
-            document.body.appendChild(overlay);
-
-            setTimeout(() => {
-                input.focus();
-            }, 100);
-
-            function submitName() {
-                const val = input.value.trim();
-                overlay.remove();
-                if (window[callbackName]) {
-                    window[callbackName](val);
-                }
-            }
-
-            btn.onclick = submitName;
-            input.onkeydown = function (e) {
-                if (e.key === 'Enter') {
-                    submitName();
-                }
+        (function () {
+            const firebaseConfig = {
+                apiKey: "AIzaSyC4MjGshf1ESaLkCOP0uWafJRRYkYymRqc",
+                authDomain: "sliders-a67c5.firebaseapp.com",
+                projectId: "sliders-a67c5",
+                storageBucket: "sliders-a67c5.firebasestorage.app",
+                messagingSenderId: "766830266792",
+                appId: "1:766830266792:web:32b76c96f6ad6fe0feb59d"
             };
-        };
+
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const fb = (typeof firebase !== 'undefined') ? firebase : null;
+
+            window._currentUser = null;
+            window._lastAuthError = "";
+            window._firebaseReady = false;
+
+            if (fb) {
+                try {
+                    if (!fb.apps.length) fb.initializeApp(firebaseConfig);
+                    window._firebaseReady = true;
+
+                    fb.auth().onAuthStateChanged((user) => {
+                        if (user) {
+                            window._currentUser = {
+                                uid: user.uid,
+                                name: user.displayName || "Jugador"
+                            };
+                        } else {
+                            window._currentUser = null;
+                        }
+                    });
+
+                    fb.auth().getRedirectResult().catch((error) => {
+                        if (error && error.code !== 'auth/no-auth-event') {
+                            window._lastAuthError = error.message || String(error);
+                        }
+                    });
+
+                    // Ranking: lee y deduplica por uid (o por nombre si es invitado).
+                    window.fetchFirestoreTopWeb = function (limit, callbackName) {
+                        const take = Math.max(1, Math.min(50, limit));
+                        fb.firestore().collection("records_mundiales")
+                            .orderBy("score", "desc")
+                            .limit(Math.min(take * 5, 100))
+                            .get()
+                            .then((snapshot) => {
+                                const best = new Map();
+                                snapshot.forEach((doc) => {
+                                    const d = doc.data() || {};
+                                    const row = {
+                                        name: String(d.name || "???").slice(0, 16),
+                                        score: parseInt(d.score || 0, 10) || 0,
+                                        level: parseInt(d.level || 1, 10) || 1
+                                    };
+                                    const key = d.uid ? ("u:" + d.uid) : ("n:" + row.name.toLowerCase());
+                                    const prev = best.get(key);
+                                    if (!prev || row.score > prev.score) best.set(key, row);
+                                });
+                                const rows = Array.from(best.values())
+                                    .sort((a, b) => b.score - a.score)
+                                    .slice(0, take);
+                                if (window[callbackName]) window[callbackName](JSON.stringify(rows), true, 200);
+                            })
+                            .catch((error) => {
+                                console.error("Error Firestore Web:", error);
+                                if (window[callbackName]) window[callbackName]("[]", false, 500);
+                            });
+                    };
+
+                    // Partida sin sesion: entrada anonima (el ranking la deduplica por nombre).
+                    window.submitScoreWeb = function (name, score, level, skin) {
+                        fb.firestore().collection("records_mundiales").add({
+                            name: String(name || "ANÓNIMO").slice(0, 16),
+                            score: parseInt(score, 10) || 0,
+                            level: parseInt(level, 10) || 1,
+                            skin: parseInt(skin, 10) || 0,
+                            timestamp: fb.firestore.FieldValue.serverTimestamp()
+                        }).catch((error) => console.error("Error submitting score web:", error));
+                    };
+
+                    // Con sesion: un doc por uid y solo se actualiza si mejora.
+                    window.submitScoreUserWeb = function (uid, name, score, level, skin) {
+                        const user = fb.auth().currentUser;
+                        if (!user) {
+                            window.submitScoreWeb(name, score, level, skin);
+                            return;
+                        }
+                        const docRef = fb.firestore().collection("records_mundiales").doc(user.uid);
+                        docRef.get().then((doc) => {
+                            const prev = doc.exists ? (parseInt(doc.data().score || 0, 10) || 0) : -1;
+                            if (score > prev) {
+                                return docRef.set({
+                                    uid: user.uid,
+                                    name: String(name || user.displayName || "Jugador").slice(0, 16),
+                                    score: parseInt(score, 10) || 0,
+                                    level: parseInt(level, 10) || 1,
+                                    skin: parseInt(skin, 10) || 0,
+                                    timestamp: fb.firestore.FieldValue.serverTimestamp()
+                                }, { merge: true });
+                            }
+                        }).catch((error) => console.error("Error writing user doc web:", error));
+                    };
+                } catch (error) {
+                    console.error("Firebase init fallo:", error);
+                    window._lastAuthError = String(error && error.message || error);
+                }
+            }
+
+            // Si Firebase no esta disponible, el juego debe poder seguir en local.
+            if (!window._firebaseReady) {
+                window.fetchFirestoreTopWeb = function (_limit, callbackName) {
+                    if (window[callbackName]) window[callbackName]("[]", false, 0);
+                };
+                window.submitScoreWeb = function () { };
+                window.submitScoreUserWeb = function () { };
+            }
+
+            window.authLoginGoogle = function () {
+                if (!window._firebaseReady) {
+                    window._lastAuthError = "Firebase no está disponible";
+                    return;
+                }
+                const provider = new fb.auth.GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                const action = isMobile
+                    ? fb.auth().signInWithRedirect(provider)
+                    : fb.auth().signInWithPopup(provider);
+                Promise.resolve(action).catch((error) => {
+                    window._lastAuthError = error.message || String(error);
+                });
+            };
+
+            window.authLogout = function () {
+                if (!window._firebaseReady) return;
+                fb.auth().signOut().catch((error) => {
+                    window._lastAuthError = error.message || String(error);
+                });
+            };
+
+            window.slidersVibrate = function (ms) {
+                try {
+                    if (navigator.vibrate) navigator.vibrate(Math.max(0, ms | 0));
+                } catch (_) { }
+            };
+
+            // Teclado nativo para moviles (iOS/Android).
+            window.requestMobileKeyboard = function (callbackName) {
+                const old = document.getElementById('mobile-keyboard-overlay');
+                if (old) old.remove();
+
+                const overlay = document.createElement('div');
+                overlay.id = 'mobile-keyboard-overlay';
+
+                const box = document.createElement('div');
+                box.className = 'kb-box';
+
+                const title = document.createElement('h3');
+                title.textContent = 'Escribe tu nombre';
+                box.appendChild(title);
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = 12;
+                input.placeholder = 'Tu nombre';
+                input.autocomplete = 'off';
+                input.autocapitalize = 'words';
+                input.spellcheck = false;
+                box.appendChild(input);
+
+                const row = document.createElement('div');
+                row.className = 'kb-row';
+
+                const cancel = document.createElement('button');
+                cancel.className = 'ghost';
+                cancel.textContent = 'Cancelar';
+                cancel.onclick = () => overlay.remove();
+
+                const save = document.createElement('button');
+                save.textContent = 'Guardar';
+                row.appendChild(cancel);
+                row.appendChild(save);
+                box.appendChild(row);
+                overlay.appendChild(box);
+                document.body.appendChild(overlay);
+
+                setTimeout(() => input.focus(), 80);
+
+                function submitName() {
+                    const value = input.value.trim();
+                    overlay.remove();
+                    if (window[callbackName]) window[callbackName](value);
+                }
+
+                save.onclick = submitName;
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        submitName();
+                    }
+                });
+            };
+        })();
     </script>
 </head>
 
@@ -320,14 +464,16 @@
     </noscript>
 
     <div id="status">
-        <img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
+        <img id="status-splash" class="show-image--false fullsize--true use-filter--true" src="index.icon.png" alt="Sliders">
+        <div id="brand-sub">devora el mapa</div>
         <progress id="status-progress"></progress>
+        <div id="loading-tip"></div>
         <div id="status-notice"></div>
     </div>
 
     <script src="index.js"></script>
     <script>
-        const GODOT_CONFIG = { "args": [], "canvasResizePolicy": 2, "emscriptenPoolSize": 8, "ensureCrossOriginIsolationHeaders": true, "executable": "index", "experimentalVK": false, "fileSizes": { "index.pck": 5113264, "index.wasm": 37902138 }, "focusCanvas": true, "gdextensionLibs": [], "godotPoolSize": 4 };
+        const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1887716,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
         const GODOT_THREADS_ENABLED = false;
         const engine = new Engine(GODOT_CONFIG);
 
@@ -335,14 +481,22 @@
             const statusOverlay = document.getElementById('status');
             const statusProgress = document.getElementById('status-progress');
             const statusNotice = document.getElementById('status-notice');
+            const loadingTip = document.getElementById('loading-tip');
+
+            const TIPS = [
+                'Sal de tu zona segura y vuelve para encerrar territorio.',
+                'Las estrellas te dan una vida (o puntos si ya tienes 3).',
+                'El portal se abre al capturar el porcentaje indicado.',
+                'Los enemigos rebotan en tu territorio: úsalo para acorralarlos.',
+                'Puedes pausar con el botón II o con Esc.'
+            ];
+            loadingTip.textContent = TIPS[Math.floor(Math.random() * TIPS.length)];
 
             let initializing = true;
             let statusMode = '';
 
             function setStatusMode(mode) {
-                if (statusMode === mode || !initializing) {
-                    return;
-                }
+                if (statusMode === mode || !initializing) return;
                 if (mode === 'hidden') {
                     statusOverlay.remove();
                     initializing = false;
@@ -430,3 +584,4 @@
 </body>
 
 </html>
+
