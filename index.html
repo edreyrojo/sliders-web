@@ -301,7 +301,8 @@
                                     const row = {
                                         name: String(d.name || "???").slice(0, 16),
                                         score: parseInt(d.score || 0, 10) || 0,
-                                        level: parseInt(d.level || 1, 10) || 1
+                                        level: parseInt(d.level || 1, 10) || 1,
+                                        avatar: String(d.avatar || "").slice(0, 40)
                                     };
                                     const key = d.uid ? ("u:" + d.uid) : ("n:" + row.name.toLowerCase());
                                     const prev = best.get(key);
@@ -321,21 +322,22 @@
                     };
 
                     // Partida sin sesion: entrada anonima (el ranking la deduplica por nombre).
-                    window.submitScoreWeb = function (name, score, level, skin) {
+                    window.submitScoreWeb = function (name, score, level, skin, avatar) {
                         fb.firestore().collection("records_mundiales_s2").add({
                             name: String(name || "ANÓNIMO").slice(0, 16),
                             score: parseInt(score, 10) || 0,
                             level: parseInt(level, 10) || 1,
                             skin: parseInt(skin, 10) || 0,
+                            avatar: String(avatar || "").slice(0, 40),
                             timestamp: fb.firestore.FieldValue.serverTimestamp()
                         }).catch((error) => console.error("Error submitting score web:", error));
                     };
 
                     // Con sesion: un doc por uid y solo se actualiza si mejora.
-                    window.submitScoreUserWeb = function (uid, name, score, level, skin) {
+                    window.submitScoreUserWeb = function (uid, name, score, level, skin, avatar) {
                         const user = fb.auth().currentUser;
                         if (!user) {
-                            window.submitScoreWeb(name, score, level, skin);
+                            window.submitScoreWeb(name, score, level, skin, avatar);
                             return;
                         }
                         const docRef = fb.firestore().collection("records_mundiales_s2").doc(user.uid);
@@ -348,10 +350,20 @@
                                     score: parseInt(score, 10) || 0,
                                     level: parseInt(level, 10) || 1,
                                     skin: parseInt(skin, 10) || 0,
+                                    avatar: String(avatar || "").slice(0, 40),
                                     timestamp: fb.firestore.FieldValue.serverTimestamp()
                                 }, { merge: true });
                             }
                         }).catch((error) => console.error("Error writing user doc web:", error));
+                    };
+
+                    // Cambia la foto del documento del usuario sin esperar a una nueva partida.
+                    window.updateAvatarUserWeb = function (avatar) {
+                        const user = fb.auth().currentUser;
+                        if (!user) return;
+                        fb.firestore().collection("records_mundiales_s2").doc(user.uid)
+                            .set({ avatar: String(avatar || "").slice(0, 40) }, { merge: true })
+                            .catch((error) => console.error("Error updating avatar web:", error));
                     };
                 } catch (error) {
                     console.error("Firebase init fallo:", error);
@@ -366,6 +378,7 @@
                 };
                 window.submitScoreWeb = function () { };
                 window.submitScoreUserWeb = function () { };
+                window.updateAvatarUserWeb = function () { };
             }
 
             window.authLoginGoogle = function () {
@@ -475,7 +488,7 @@
 
     <script src="index.js"></script>
     <script>
-        const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1965448,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+        const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1966632,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
         const GODOT_THREADS_ENABLED = false;
         const engine = new Engine(GODOT_CONFIG);
 
