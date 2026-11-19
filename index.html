@@ -238,6 +238,39 @@
         #mobile-keyboard-overlay button:active {
             filter: brightness(1.25);
         }
+
+        #rotate {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            background: #050b12;
+            color: #eaf7f4;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-align: center;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        #rotate span {
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: .12em;
+            color: rgba(200, 220, 230, .6);
+            text-transform: uppercase;
+        }
+
+        @media (orientation: landscape) and (max-height: 520px) {
+            #rotate {
+                display: flex;
+            }
+        }
     </style>
     <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
@@ -250,6 +283,9 @@
     <script>
         (function () {
             const firebaseConfig = {
+                // Para activar Firebase Analytics, pega aquí el measurementId (G-XXXX)
+                // y el SDK se carga solo la primera vez que se registra un evento.
+                // measurementId: "G-XXXXXXXXXX",
                 apiKey: "AIzaSyC4MjGshf1ESaLkCOP0uWafJRRYkYymRqc",
                 authDomain: "sliders-a67c5.firebaseapp.com",
                 projectId: "sliders-a67c5",
@@ -302,6 +338,7 @@
                                         name: String(d.name || "???").slice(0, 16),
                                         score: parseInt(d.score || 0, 10) || 0,
                                         level: parseInt(d.level || 1, 10) || 1,
+                                        uid: String(d.uid || ""),
                                         avatar: String(d.avatar || "").slice(0, 40)
                                     };
                                     const key = d.uid ? ("u:" + d.uid) : ("n:" + row.name.toLowerCase());
@@ -409,6 +446,42 @@
                 } catch (_) { }
             };
 
+            // Eventos de gameplay. Sin measurementId quedan en consola (debug);
+            // al configurarlo se envían a Firebase Analytics (carga diferida).
+            window._slidersTrackQueue = [];
+            window._slidersAnalyticsLoading = false;
+            window._slidersAnalyticsReady = false;
+            window.slidersTrack = function (name, params) {
+                try {
+                    const payload = params || {};
+                    console.debug("[track]", name, payload);
+                    if (!firebaseConfig.measurementId || !window._firebaseReady) return;
+                    if (!window._slidersAnalyticsReady) {
+                        window._slidersTrackQueue.push([name, payload]);
+                        if (window._slidersAnalyticsLoading) return;
+                        window._slidersAnalyticsLoading = true;
+                        const s = document.createElement("script");
+                        s.src = "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js";
+                        s.onload = function () {
+                            try {
+                                const an = fb.analytics();
+                                window._slidersAnalyticsReady = true;
+                                window._slidersTrackQueue.forEach((e) => an.logEvent(e[0], e[1]));
+                                window._slidersTrackQueue = [];
+                            } catch (e) {
+                                console.warn("Analytics no disponible:", e);
+                            }
+                        };
+                        s.onerror = function () { console.warn("No se pudo cargar Analytics"); };
+                        document.head.appendChild(s);
+                        return;
+                    }
+                    fb.analytics().logEvent(name, payload);
+                } catch (e) {
+                    console.warn("track error:", e);
+                }
+            };
+
             // Teclado nativo para moviles (iOS/Android).
             window.requestMobileKeyboard = function (callbackName) {
                 const old = document.getElementById('mobile-keyboard-overlay');
@@ -478,6 +551,11 @@
         Your browser does not support JavaScript.
     </noscript>
 
+    <div id="rotate">
+        GIRA TU TELÉFONO
+        <span>Sliders se juega en vertical</span>
+    </div>
+
     <div id="status">
         <img id="status-splash" class="fullsize--true" src="index.icon.png" alt="Sliders">
         <div id="brand-sub">devora el mapa</div>
@@ -488,7 +566,7 @@
 
     <script src="index.js"></script>
     <script>
-        const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1966632,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+        const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":1968952,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
         const GODOT_THREADS_ENABLED = false;
         const engine = new Engine(GODOT_CONFIG);
 
